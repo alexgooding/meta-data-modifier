@@ -48,7 +48,7 @@ class MetaDataModifier:
         track_number = []
         for char in name:
             if char.isdigit():
-                if char != '0':
+                if char != '0' or track_number:
                     track_number.append(char)
             else:
                 break
