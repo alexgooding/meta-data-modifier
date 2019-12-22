@@ -1,6 +1,7 @@
 from spotipy import Spotify
 import spotipy.util as util
 from spotipy.client import SpotifyException
+from numpy import argmin
 
 
 class MetadataDiscoverer:
@@ -25,33 +26,33 @@ class MetadataDiscoverer:
             while results['tracks']['next']:
                 results = self.sp.next(results['tracks'])
                 tracks.extend(results['tracks']['items'])
-            # print(tracks[0])
             return tracks
         except SpotifyException:
             raise
 
-    def cross_reference_tracks_album(self, track_list, common_track_info=None, starting_track_index=0):
+    def cross_reference_album_info(self, track_list, common_album_info=None, starting_track_index=0):
         number_successful_requests = 0
         try:
-            if not common_track_info:
-                common_track_info = [[track['album']['name'], [artist['name'] for artist in track['artists']]] for track in
-                                     self.search_for_track_metadata(track_list[starting_track_index])]
-            # print(common_track_info)
-            starting_track_index += 1
-            number_successful_requests += 1
-            for i in range(starting_track_index, len(track_list)):
-                next_track_info = [[track['album']['name'], [artist['name'] for artist in track['artists']]] for track in
-                                     self.search_for_track_metadata(track_list[i])]
-                # common_track_info = list(set(next_track_info).intersection(common_track_info))
-                common_track_info = [element1 for element1 in common_track_info for element2 in next_track_info if element1 == element2]
+            initialisation_correction = 0
+            if not common_album_info and starting_track_index <= len(track_list):
+                common_album_info = [track['album'] for track in self.search_for_track_metadata(track_list[starting_track_index])]
+                initialisation_correction = 1
                 number_successful_requests += 1
-            print(common_track_info)
-            print(len(common_track_info))
+            for i in range(starting_track_index + initialisation_correction, len(track_list)):
+                next_album_info = [track['album'] for track in self.search_for_track_metadata(track_list[i])]
+                common_album_info = [element1 for element1 in next_album_info for element2 in common_album_info
+                                     if repr(element1) == repr(element2)]
+                number_successful_requests += 1
+
         except SpotifyException as e:
             print("Too many results for Spotify request: " + str(e))
-            self.cross_reference_tracks_album(track_list, common_track_info, number_successful_requests+1)
+            common_album_info = self.cross_reference_album_info(track_list, common_album_info, starting_track_index+number_successful_requests+1)
 
-if __name__ == '__main__':
-    MD = MetadataDiscoverer()
-    # MD.search_for_track_metadata("kill everybody")
-    MD.cross_reference_tracks_album(["right in", "the devil's den", "right on time"])
+        if len(common_album_info) > 1:
+            common_album_info = self.pick_album_with_the_closest_number_of_tracks(common_album_info, len(track_list))
+        return common_album_info
+
+    @staticmethod
+    def pick_album_with_the_closest_number_of_tracks(albums, track_list_len):
+        index = argmin([abs(album['total_tracks'] - track_list_len) for album in albums])
+        return [albums[index]]
