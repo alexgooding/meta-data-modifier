@@ -30,17 +30,18 @@ class MetadataDiscoverer:
         except SpotifyException:
             raise
 
-    def cross_reference_album_info(self, track_list, common_album_info=None, starting_track_index=0):
+    def cross_reference_album_info(self, track_list, common_album_info=None, starting_track_index=0, total_number_of_successful_requests=0):
         number_successful_requests = 0
         try:
             initialisation_correction = 0
-            if not common_album_info and starting_track_index <= len(track_list):
-                common_album_info = [track['album'] for track in self.search_for_track_metadata(track_list[starting_track_index])]
-                print("results for: " + track_list[starting_track_index])
+            while not common_album_info and starting_track_index + initialisation_correction <= len(track_list):
+                common_album_info = [track['album'] for track in self.search_for_track_metadata(track_list[starting_track_index+initialisation_correction])]
+                print("results for: " + track_list[starting_track_index+initialisation_correction])
                 print(common_album_info)
                 print("")
-                initialisation_correction = 1
+                initialisation_correction += 1
                 number_successful_requests += 1
+                total_number_of_successful_requests += 1
             for i in range(starting_track_index + initialisation_correction, len(track_list)):
                 next_album_info = [track['album'] for track in self.search_for_track_metadata(track_list[i])]
                 print("results for: " + track_list[i])
@@ -48,14 +49,23 @@ class MetadataDiscoverer:
                 print("")
                 album_info_intersection = [element1 for element1 in next_album_info for element2 in common_album_info
                                      if repr(element1) == repr(element2)]
+
                 # Skip track if intersection with previous album info is none
                 if album_info_intersection:
                     common_album_info = album_info_intersection
+
                 number_successful_requests += 1
+                total_number_of_successful_requests += 1
+
+                # If the intersection of album info is length one after intersecting two of more tracks, return
+                if total_number_of_successful_requests > 1 and len(common_album_info) == 1:
+                    return common_album_info
 
         except SpotifyException as e:
             print("Too many results for Spotify request: " + str(e) + "\nTrack skipped.")
-            common_album_info = self.cross_reference_album_info(track_list, common_album_info, starting_track_index+number_successful_requests+1)
+            common_album_info = self.cross_reference_album_info(track_list, common_album_info,
+                                                                starting_track_index+number_successful_requests+1,
+                                                                total_number_of_successful_requests)
 
         if len(common_album_info) > 1:
             common_album_info = self.pick_album_with_the_closest_number_of_tracks(common_album_info, len(track_list))
@@ -65,3 +75,15 @@ class MetadataDiscoverer:
     def pick_album_with_the_closest_number_of_tracks(albums, track_list_len):
         index = argmin([abs(album['total_tracks'] - track_list_len) for album in albums])
         return [albums[index]]
+
+    @staticmethod
+    def sort_track_list(track_list):
+        return sorted(track_list, key=len, reverse=True)
+
+    def find_album_metadata(self, track_list):
+        album_metadata = None
+        if track_list:
+            sorted_track_list = self.sort_track_list(track_list)
+            album_metadata = self.cross_reference_album_info(sorted_track_list)
+
+        return album_metadata
