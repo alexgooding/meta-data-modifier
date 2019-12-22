@@ -46,8 +46,11 @@ class MetadataDiscoverer:
                 print("results for: " + track_list[i])
                 print(next_album_info)
                 print("")
-                common_album_info = [element1 for element1 in next_album_info for element2 in common_album_info
+                album_info_intersection = [element1 for element1 in next_album_info for element2 in common_album_info
                                      if repr(element1) == repr(element2)]
+                # Skip track if intersection with previous album info is none
+                if album_info_intersection:
+                    common_album_info = album_info_intersection
                 number_successful_requests += 1
 
         except SpotifyException as e:
