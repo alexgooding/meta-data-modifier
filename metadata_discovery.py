@@ -38,12 +38,18 @@ class MetadataDiscoverer:
                     album_metadata = self.cross_reference_album_info(sorted_track_list, [])
                     if album_metadata:
                         print("Successfully found the following album metadata: " + str(album_metadata[0]))
+                        with open("log.txt", "a") as my_file:
+                            my_file.write("Successfully found a single cross-referenced album metadata\n")
                         return album_metadata[0]
                 raise ValueError("No metadata found for track list '{0}'".format(', '.join(track_list)))
             print("Successfully found the following album metadata: " + str(album_metadata[0]))
+            with open("log.txt", "a") as my_file:
+                my_file.write("Successfully found a single cross-referenced album metadata\n")
             return album_metadata[0]
         except ValueError as ve:
             print(ve)
+            with open("log.txt", "a") as my_file:
+                my_file.write(str(ve) + "\n")
             raise
 
     def search_for_track_metadata(self, track_title):
@@ -60,6 +66,9 @@ class MetadataDiscoverer:
                 results = self.sp.next(results['tracks'])
                 tracks.extend(results['tracks']['items'])
             print("Found track information for track: " + track_title)
+            with open("log.txt", "a") as my_file:
+                my_file.write("Found track information for track: " + track_title)
+
             return tracks
         except SpotifyException:
             raise
@@ -83,6 +92,8 @@ class MetadataDiscoverer:
                 print("results for: " + track_list[starting_track_index+initialisation_correction])
                 print(common_album_info)
                 print("")
+                with open("log.txt", "a") as my_file:
+                    my_file.write("Found album results for: " + track_list[starting_track_index+initialisation_correction] + "\n")
                 initialisation_correction += 1
                 number_successful_requests += 1
                 total_number_of_successful_requests += 1
@@ -91,6 +102,8 @@ class MetadataDiscoverer:
                 print("results for: " + track_list[i])
                 print(next_album_info)
                 print("")
+                with open("log.txt", "a") as my_file:
+                    my_file.write("Found album results for: " + track_list[i] + "\n")
                 album_info_intersection = [element1 for element1 in next_album_info for element2 in common_album_info
                                      if repr(element1) == repr(element2)]
 
@@ -109,6 +122,8 @@ class MetadataDiscoverer:
 
         except SpotifyException as e:
             print("Too many results for Spotify request: " + str(e) + "\nTrack skipped.")
+            with open("log.txt", "a") as my_file:
+                my_file.write("Too many results for Spotify request: " + str(e) + "\nTrack skipped.\n")
             common_album_info = self.cross_reference_album_info(track_list, common_album_info,
                                                                 starting_track_index+number_successful_requests+1,
                                                                 total_number_of_successful_requests)

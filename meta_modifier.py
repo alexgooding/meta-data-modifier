@@ -32,7 +32,9 @@ class MetaDataModifier:
                     tag = mutagen.File(path, easy=True)
                     tag.add_tags()
                 except:
-                    print("Unexpected error:", sys.exc_info()[0])
+                    print("Unexpected error: " + sys.exc_info()[0])
+                    with open("log.txt", "a") as my_file:
+                        my_file.write("Unexpected error: " + sys.exc_info()[0] + "\n")
                     raise
 
             # Get the track number from the start of the file name and add to the track number meta data
@@ -65,7 +67,9 @@ class MetaDataModifier:
                     tag = mutagen.File(path, easy=True)
                     tag.add_tags()
                 except:
-                    print("Unexpected error:", sys.exc_info()[0])
+                    print("Unexpected error: " + sys.exc_info()[0])
+                    with open("log.txt", "a") as my_file:
+                        my_file.write("Unexpected error: " + sys.exc_info()[0] + "\n")
                     raise
 
             tag['album'] = album_metadata.get('album_name')
