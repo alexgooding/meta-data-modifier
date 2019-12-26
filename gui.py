@@ -1,7 +1,8 @@
 import sys
-from PyQt4 import QtGui, Qt
+from PyQt4 import QtGui, Qt, QtCore
 from audio_folder import AudioFolder
 from meta_modifier import MetaDataModifier
+import os
 
 
 class Gui(QtGui.QWidget):
@@ -15,10 +16,16 @@ class Gui(QtGui.QWidget):
         self.cleanup_title = True
         self.ai_metadata = False
 
+        if os.path.exists('log.txt'):
+            open('log.txt', 'w').close()
+
     def init_ui(self):
         self.setGeometry(300, 300, 800, 500)
         self.setWindowTitle('Auto Metadata Modifier')
         self.setWindowIcon(QtGui.QIcon('gui_resources/icon1.png'))
+
+        grid = QtGui.QGridLayout()
+        self.setLayout(grid)
 
         self.chooseBtn = QtGui.QPushButton('Choose Folder', self)
         self.chooseBtn.move(300, 20)
@@ -48,9 +55,26 @@ class Gui(QtGui.QWidget):
         checkAiMetadata.move(100, 300)
         checkAiMetadata.stateChanged.connect(self.change_ai_metadata_state)
 
+        self.console_output = QtGui.QTextBrowser()
+
+        grid.addWidget(self.chooseBtn)
+        grid.addWidget(self.filePathLabel)
+        grid.addWidget(checkBoxAddTrackNumber)
+        grid.addWidget(checkCleanupTitle)
+        grid.addWidget(checkAiMetadata)
+        grid.addWidget(self.goBtn)
+        grid.addWidget(self.console_output)
+
         self.setStyleSheet("QWidget {font: 24pt}")
+        self.console_output.setStyleSheet("QWidget {font: 10pt}")
 
         self.show()
+
+    def append_console_output(self, text=""):
+        if text:
+            self.console_output.append(text)
+        else:
+            self.console_output.append(open('log.txt').read())
 
     def show_dialog(self):
         # Get filename using QFileDialog
@@ -59,14 +83,19 @@ class Gui(QtGui.QWidget):
             self.filePathLabel.setText("Selected folder: " + str(MetaDataModifier.extract_filename(self.file_path)))
 
     def edit_meta_data(self):
+        self.console_output.setPlainText("Files processing...\n")
         audio_folder = AudioFolder(self.file_path)
         path_list_per_folder = audio_folder.get_file_paths_by_folder()
         label_text = "Processed " + str(len(audio_folder.get_file_paths())) + " files"
+        if os.path.exists('log.txt'):
+            open('log.txt', 'w').close()
         try:
             for path_list in path_list_per_folder:
                 MetaDataModifier(path_list).set_meta_data_for_folder(self.add_track_number, self.cleanup_title, self.ai_metadata)
+                self.append_console_output("Processing complete for tracks: \n" + ", \n".join(path_list))
         except ValueError as ve:
             label_text = ve
+            self.append_console_output()
 
         self.filePathLabel.setText(label_text)
 
