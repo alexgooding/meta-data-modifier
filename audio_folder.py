@@ -2,12 +2,20 @@ import glob
 
 
 class AudioFolder:
+    """
+    Methods for gathering file paths of files with specific encodings.
+    """
 
     def __init__(self, folder_path):
         self.folder_path = folder_path
         self.common_audio_encodings = ['.mp3']
 
     def get_file_paths(self):
+        """
+        Recursively search a file path for files with the extensions
+        listed in the class initialisation.
+        :return: A list of file paths for each file found
+        """
         path_list = []
         for encoding in self.common_audio_encodings:
             # Handle individual files being passed in
@@ -20,6 +28,11 @@ class AudioFolder:
         return path_list
 
     def get_file_paths_by_folder(self):
+        """
+        Uses get_file_paths to retrieve file paths and then organises
+        them into sublists by the folder the files are contained in.
+        :return: A list of lists containing the file paths found
+        """
         file_paths = self.get_file_paths()
         file_paths_by_folder = []
         while file_paths:

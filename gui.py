@@ -44,9 +44,9 @@ class Gui(QtGui.QWidget):
         checkCleanupTitle.toggle()
         checkCleanupTitle.stateChanged.connect(self.change_cleanup_title_state)
 
-        checkCleanupTitle = QtGui.QCheckBox('Search for file metadata intelligently', self)
-        checkCleanupTitle.move(100, 300)
-        checkCleanupTitle.stateChanged.connect(self.change_ai_metadata_state)
+        checkAiMetadata = QtGui.QCheckBox('Search for file metadata intelligently', self)
+        checkAiMetadata.move(100, 300)
+        checkAiMetadata.stateChanged.connect(self.change_ai_metadata_state)
 
         self.setStyleSheet("QWidget {font: 24pt}")
 
@@ -60,12 +60,15 @@ class Gui(QtGui.QWidget):
 
     def edit_meta_data(self):
         audio_folder = AudioFolder(self.file_path)
-        path_list = audio_folder.get_file_paths()
+        path_list_per_folder = audio_folder.get_file_paths_by_folder()
+        label_text = "Processed " + str(len(audio_folder.get_file_paths())) + " files"
+        try:
+            for path_list in path_list_per_folder:
+                MetaDataModifier(path_list).set_meta_data_for_folder(self.add_track_number, self.cleanup_title, self.ai_metadata)
+        except ValueError as ve:
+            label_text = ve
 
-        for path in path_list:
-            MetaDataModifier(path).set_meta_data(self.add_track_number, self.cleanup_title)
-
-        self.filePathLabel.setText("Processed " + str(len(path_list)) + " files")
+        self.filePathLabel.setText(label_text)
 
     def change_add_track_number_state(self):
         if self.add_track_number:
@@ -74,16 +77,16 @@ class Gui(QtGui.QWidget):
             self.add_track_number = True
 
     def change_cleanup_title_state(self):
-        if self.add_track_number:
-            self.add_track_number = False
+        if self.cleanup_title:
+            self.cleanup_title = False
         else:
-            self.add_track_number = True
+            self.cleanup_title = True
 
     def change_ai_metadata_state(self):
-        if self.add_track_number:
-            self.add_track_number = False
+        if self.ai_metadata:
+            self.ai_metadata = False
         else:
-            self.add_track_number = True
+            self.ai_metadata = True
 
 def run_gui():
     app = QtGui.QApplication(sys.argv)
